@@ -157,7 +157,7 @@
     "util-deprecate": "^1.0.2",
     "v8flags": "^4.0.1",
     "value-or-function": "^4.0.0",
-    "vinyl": "^2.2.1",
+    "vinyl": "^3.0.0",
     "vinyl-contents": "^2.0.0",
     "vinyl-fs": "^4.0.0",
     "vinyl-sourcemap": "^2.0.0",
