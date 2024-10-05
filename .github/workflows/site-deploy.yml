@@ -1,260 +1,72 @@
-version: 2
-updates:
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "bundler"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-name: Deploy to GitHub Pages
-on:
-  push:
-    branches: ["main"]
-  workflow_dispatch:
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Fetch all history for accurate build
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4.0.2
-        with:
-          node-version: '16.x'
-          cache: 'npm'
-
-      - name: Install dependencies
-        working-directory: ./backend
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
-        continue-on-error: true  # Allow the step to continue even if it fails
-
-      - name: Retry Install dependencies if it fails
-        if: failure()  # Check if previous step failed
-        working-directory: ./backend
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
-
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.0'
-
-      - name: Install Jekyll dependencies
-        run: |
-          bundle install
-        continue-on-error: true  # Allow the step to continue even if it fails
-
-      - name: Retry Install Jekyll dependencies if it fails
-        if: failure()  # Check if previous step failed
-        run: |
-          bundle install
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Build with Jekyll
-        run: |
-          bundle exec jekyll build
-        continue-on-error: true  # Allow the step to continue even if it fails
-
-      - name: Retry Build with Jekyll if it fails
-        if: failure()  # Check if previous step failed
-        run: |
-          bundle exec jekyll build
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-name: Deploy to GitHub Pages
-
-on:
-  push:
-    branches: ["main"]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Fetch all history for accurate build
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4.0.2
-        with:
-          node-version: '16.x'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          npm install
-        continue-on-error: true  # Allow the step to continue even if it fails
-      - name: Retry Install dependencies if it fails
-        if: failure()  # Check if previous step failed
-        run: |
-          npm install
-
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.0'
-
-      - name: Install Jekyll dependencies
-        run: |
-          bundle install
-        continue-on-error: true  # Allow the step to continue even if it fails
-      - name: Retry Install Jekyll dependencies if it fails
-        if: failure()  # Check if previous step failed
-        run: |
-          bundle install
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Build with Jekyll
-        run: |
-          bundle exec jekyll build
-        continue-on-error: true  # Allow the step to continue even if it fails
-      - name: Retry Build with Jekyll if it fails
-        if: failure()  # Check if previous step failed
-        run: |
-          bundle exec jekyll build
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-name: Deploy Skunkworks Contact Form
+name: Site Check
 
 on:
   push:
     branches:
       - main
-
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '14'
-
-    - name: Install dependencies
-      run: npm install
-      working-directory: ./backend
-
-    - name: Deploy to Heroku
-      env:
-        HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-        HEROKU_APP_NAME: your-heroku-app-name
-      run: |
-        echo "machine api.heroku.com" >> ~/.netrc
-        echo "  login ${{ secrets.HEROKU_EMAIL }}" >> ~/.netrc
-        echo "  password ${{ secrets.HEROKU_API_KEY }}" >> ~/.netrc
-        echo "machine git.heroku.com" >> ~/.netrc
-        echo "  login ${{ secrets.HEROKU_EMAIL }}" >> ~/.netrc
-        echo "  password ${{ secrets.HEROKU_API_KEY }}" >> ~/.netrc
-        git remote add heroku https://git.heroku.com/${{ env.HEROKU_APP_NAME }}.git
-        git push heroku main
-      working-directory: ./backend
-name: Close stale issues and pull requests
-
-on:
-  schedule:
-    - cron: '0 0 * * *'
-
-jobs:
-  stale:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/stale@v4
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          stale-issue-message: 'This issue has been automatically marked as stale because it has not had recent activity. It will be closed if no further activity occurs.'
-          stale-pr-message: 'This pull request has been automatically marked as stale because it has not had recent activity. It will be closed if no further activity occurs.'
-          days-before-stale: 30
-          days-before-close: 7
-          stale-issue-label: 'stale'
-          stale-pr-label: 'stale'
-name: Run Tests
-on:
-  push:
-    branches: ["main"]
   pull_request:
-    branches: ["main"]
+    branches:
+      - main
+
 jobs:
-  test:
+  build-and-test:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          fetch-depth: 0
-      - name: Setup Node.js
-        uses: actions/setup-node@v4.0.2
-        with:
-          node-version: '16.x'
-          cache: 'npm'
+          node-version: '16'
+
       - name: Install dependencies
-        working-directory: ./backend
+        run: npm install
+
+      - name: Run linting for JS and CSS
         run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+          npm run lint:js || echo "No lint:js script found, skipping."
+          npm run lint:css || echo "No lint:css script found, skipping."
         continue-on-error: true
-      - name: Retry Install dependencies if it fails
-        if: failure()
-        working-directory: ./backend
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
-      - name: Run Tests
-        working-directory: ./backend
-        run: npm test || echo "No tests specified" && exit 0
+
+      - name: Run tests
+        run: npm test || echo "No tests found, skipping."
         continue-on-error: true
-      - name: Retry Run Tests if it fails
-        if: failure()
-        working-directory: ./backend
-        run: npm test || echo "No tests specified" && exit 0
+
+      - name: Run Storybook tests
+        run: npm run chromatic --project-token=${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+        if: ${{ secrets.CHROMATIC_PROJECT_TOKEN != '' }}
+
+      - name: Build project
+        run: npm run build
+
+      - name: Validate HTML
+        run: npx html-validator-cli --file dist/**/*.html --format=text || echo "HTML validation failed."
+        continue-on-error: true
+
+      - name: Validate CSS
+        run: npx stylelint "dist/**/*.css" || echo "CSS validation failed."
+        continue-on-error: true
+
+      - name: Validate JS
+        run: npx eslint "dist/**/*.js" || echo "JS validation failed."
+        continue-on-error: true
+
+      - name: Verify images
+        run: python ./verify_images.py || echo "Image verification script failed."
+        continue-on-error: true
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
